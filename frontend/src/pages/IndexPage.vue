@@ -23,9 +23,35 @@
           <q-btn flat round dense icon="content_copy" @click="copyRoomCode" />
           <q-btn flat round dense icon="share" @click="shareRoom" />
           <q-btn flat round dense icon="logout" @click="leaveRoom" />
-          <q-avatar v-if="telegramPhotoUrl" size="32px">
-            <img :src="telegramPhotoUrl" />
-          </q-avatar>
+          <div class="room-users" @click="showUsersMenu = !showUsersMenu">
+            <q-avatar 
+              v-for="(user, index) in roomUsers.slice(0, 3)" 
+              :key="user.user_id"
+              size="32px"
+              class="overlapping-user"
+              :style="{
+                left: `${index * 20}px`,
+                zIndex: 100 - index,
+                position: 'absolute'
+              }"
+            >
+              <img :src="user.photo_url || 'https://cdn.quasar.dev/img/avatar.png'" />
+            </q-avatar>
+
+            <span 
+              v-if="roomUsers.length > 3" 
+              class="users-count"
+              :style="{
+                position: 'absolute',
+                left: `${3 * 20 + 10}px`,
+                fontSize: '12px',
+                color: '#aaa',
+                lineHeight: '32px'
+              }"
+            >
+              +{{ roomUsers.length - 3 }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -153,9 +179,35 @@
               <q-btn flat round dense icon="content_copy" @click="copyRoomCode" />
               <q-btn flat round dense icon="share" @click="shareRoom" />
               <q-btn flat round dense icon="logout" @click="leaveRoom" />
-              <q-avatar v-if="telegramPhotoUrl" size="32px">
-                <img :src="telegramPhotoUrl" />
+              <div class="room-users" @click="showUsersMenu = !showUsersMenu">
+               <q-avatar 
+                v-for="(user, index) in roomUsers.slice(0, 3)" 
+                :key="user.user_id"
+                size="32px"
+                class="overlapping-user"
+                :style="{
+                  left: `${index * 20}px`,
+                  zIndex: 100 - index,
+                  position: 'absolute'
+                }"
+              >
+                <img :src="user.photo_url || 'https://cdn.quasar.dev/img/avatar.png'" />
               </q-avatar>
+
+              <span 
+                v-if="roomUsers.length > 3" 
+                class="users-count"
+                :style="{
+                  position: 'absolute',
+                  left: `${3 * 20 + 10}px`,
+                  fontSize: '12px',
+                  color: '#aaa',
+                  lineHeight: '32px'
+                }"
+              >
+                +{{ roomUsers.length - 3 }}
+              </span>
+              </div>
             </div>
           </div>
 
@@ -262,6 +314,27 @@
       </div>
     </template>
   </div>
+
+  <q-banner
+    v-if="showToast"
+    :class="toastColor"
+    class="text-white fixed-bottom full-width text-center"
+    style="z-index: 9999;"
+  >
+    {{ toastMessage }}
+  </q-banner>
+  <q-menu v-model="showUsersMenu">
+    <q-list style="min-width: 200px">
+      <q-item v-for="user in roomUsers" :key="user.user_id">
+        <q-avatar size="32px" class="q-mr-sm">
+          <img :src="getUserAvatar(user)" />
+        </q-avatar>
+        <q-item-section>
+          <q-item-label>{{ getUserName(user) }}</q-item-label>
+        </q-item-section>
+      </q-item>
+    </q-list>
+  </q-menu>
 </template>
 
 <script>
@@ -292,6 +365,23 @@ export default {
       isMobile: false,
       roomCode: '',
       showSearchResults: false,
+
+      toastMessage: '',
+      toastColor: 'primary',
+      showToast: false,
+
+      roomUsers: [],
+      showUsersMenu: false,
+      user: { 
+        "id": String(Math.floor(Math.random() * 10000)), 
+        "first_name": "", 
+        "last_name": "", 
+        "username": "", 
+        "language_code": "en", 
+        "allows_write_to_pm": true, 
+        "photo_url": "https://cdn-icons-png.flaticon.com/512/848/848006.png",
+        "source" : "web"
+      },
     };
   },
   computed: {
@@ -300,6 +390,31 @@ export default {
     }
   },
   methods: {
+    showToastMessage(message, color = 'positive') {
+      this.toastMessage = message;
+      this.toastColor = color;
+      this.showToast = true;
+
+      setTimeout(() => {
+        this.showToast = false;
+      }, 2000);
+    },
+    handleUsersUpdate(users) {
+      this.roomUsers = [this.user, ...users.filter(user => user.user_id !== this.user.id)];
+    },
+    getUserAvatar(user) {
+      if (user.source === 'telegram' && user.photo_url) {
+        return user.photo_url;
+      }
+      return 'https://cdn-icons-png.flaticon.com/512/6063/6063734.png'; // дефолтная аватарка
+    },
+    getUserName(user) {
+      if (user.source === 'telegram') {
+        return `${user.name || ''} ${user.last_name || ''}`.trim() || 'Telegram User';
+      }
+      return `User #${user.user_id.replace('web_', '')}`;
+    },
+
     truncateText(text, maxLength) {
       if (!text) return '';
       return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
@@ -307,8 +422,7 @@ export default {
 
     async createRoom() {
       try {
-        const userId = window?.Telegram?.WebApp?.initDataUnsafe?.user?.id || Math.floor(Math.random() * 10000);
-        const { data } = await axios.post('/api/rooms', { telegram_id: userId });
+        const { data } = await axios.post('/api/rooms', { telegram_id: this.user.id });
         this.roomCode = data.code;
 
         const url = new URL(window.location.href);
@@ -330,16 +444,14 @@ export default {
         }
       } catch (e) {
         console.error('Комната не найдена', e);
+        this.showToastMessage('Комната не найдена', 'negative');
       }
     },
 
     copyRoomCode() {
       navigator.clipboard.writeText(this.roomCode)
         .then(() => {
-          this.$q.notify({
-            message: 'Код комнаты скопирован',
-            color: 'positive'
-          });
+          this.showToastMessage('Код комнаты скопирован', 'positive');
         })
         .catch(err => {
           console.error('Ошибка копирования:', err);
@@ -357,10 +469,7 @@ export default {
         });
       } else {
         this.copyRoomCode();
-        this.$q.notify({
-          message: 'Ссылка скопирована в буфер',
-          color: 'positive'
-        });
+        this.showToastMessage('Ссылка скопирована в буфер', 'positive');
       }
     },
 
@@ -413,12 +522,21 @@ export default {
             this.ws.send(JSON.stringify({ type: 'pong' }));
           }
         }, 30000);
+
+        console.log(`>> joinMusic`, this.user);
+        this.ws.send(
+          JSON.stringify({ type: 'joinMusic', data: this.user })
+        );
       };
 
       this.ws.onmessage = (event) => {
         const { type, data } = JSON.parse(event.data);
         console.log(`<< ${type}`, data ? data : '');
         switch (type) {
+          case 'usersUpdated':
+            this.handleUsersUpdate(data);
+            break;
+
           case 'searchMusic':
             this.searchResults = data;
             this.isSearching = false;
@@ -471,13 +589,20 @@ export default {
         } 
       };
 
-      this.ws.onclose = () => {
-        console.log('Disconnected from WebSocket server');
+      this.ws.onclose = (msg) => {
+        console.log('Disconnected from WebSocket server', msg || '');
         this.wsIsConnected = false;
         clearInterval(this.pingInterval);
+
+        if (msg.code === 1008) {
+          this.showToastMessage('Комната не найдена', 'negative');
+          this.leaveRoom();
+          window.location.reload();
+        }
       };
 
-      this.ws.onerror = () => {
+      this.ws.onerror = (e) => {
+        console.error('WebSocket error', e);
         clearInterval(this.pingInterval);
       };
     },
@@ -607,6 +732,15 @@ export default {
         this.audio = this.$refs.audioPlayer.audioPlayer;
       }
     });
+
+    this.user = window?.Telegram?.WebApp?.initDataUnsafe?.user || this.user;
+
+    if (window?.Telegram?.WebApp?.initDataUnsafe?.user) {
+      this.user.source = 'telegram';
+      this.user.id = String(this.user.id);
+    }
+    this.user.user_id = this.user.id;
+    
   },
 
   beforeUnmount() {
@@ -873,6 +1007,40 @@ export default {
   }
 }
 
+.room-users {
+  display: flex;
+  position: relative;
+  height: 32px;
+  width: 80px;
+  cursor: pointer;
+}
+
+.overlapping-user {
+  position: absolute;
+  border: 2px solid #1e1e1e;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    z-index: 1;
+    transform: scale(1.1);
+  }
+}
+
+.q-menu {
+  background: #2a2a2a !important;
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  
+  .q-item {
+    color: white;
+    
+    &:hover {
+      background: #333 !important;
+    }
+  }
+}
+
 .q-item {
   transition: all 0.2s ease;
   border-radius: 8px;
@@ -881,6 +1049,12 @@ export default {
   &:hover {
     background: #333 !important;
   }
+}
+
+.overlapping-user {
+  position: absolute;
+  border: 2px solid #1e1e1e;
+  transition: all 0.2s ease;
 }
 
 .q-item__label--caption {

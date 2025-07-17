@@ -2,6 +2,7 @@ import { getRoomByCode, updateRoomState } from '../services/rooms.js';
 import { getTracksFromYandex, getTrackUrlYandex, wrappedApi } from '../services/yandex_music.js';
 import { getTracksFromMuzlen } from '../services/muzlen_music.js';
 import db from '../db/knex.js';
+import { addRoomUser, removeRoomUser, getRoomUsers } from '../services/roomUsers.js';
 
 import {
   initRoomState,
@@ -10,6 +11,7 @@ import {
   broadcastToRoom,
   getRoomState,
 } from '../services/roomStateManager.js';
+import { configDotenv } from 'dotenv';
 
 let nextUserId = 1;
 const currentTimeBuffer = {}; // roomId -> [timestamps]
@@ -26,6 +28,8 @@ export function handleWSConnection(ws, req) {
 
     const roomId = room.id;
     const userId = nextUserId++;
+    let userData = {};
+  
     addUserToRoom(roomId, userId, ws);
     const state = initRoomState(roomId);
 
@@ -40,9 +44,6 @@ export function handleWSConnection(ws, req) {
       artists: JSON.parse(t.artists),
       type: t.type
     }));
-
-    console.log(`>> joinMusic`, state.queue);
-    ws.send(JSON.stringify({ type: 'joinMusic', data: state.queue }));
 
     // Ping-pong keep-alive
     const pingInterval = setInterval(() => {
@@ -230,7 +231,23 @@ export function handleWSConnection(ws, req) {
           break;
 
         case 'joinMusic':
+          console.log(`>> joinMusic`, state.queue);
           ws.send(JSON.stringify({ type: 'joinMusic', data: state.queue }));
+
+          userData = {
+            user_id: data.id,
+            name: data.first_name,
+            last_name: data.last_name,
+            username: data.username,
+            photo_url: data.photo_url,
+            source: data.source
+          };
+          
+          await addRoomUser(roomId, userData);
+          
+          const users = await getRoomUsers(roomId);
+
+          broadcastToRoom(roomId, { type: 'usersUpdated', data: users });
           break;
 
         case 'searchMusic': {
@@ -253,9 +270,16 @@ export function handleWSConnection(ws, req) {
       }
     });
 
-    ws.on('close', () => {
+    ws.on('close', async () => {
       clearInterval(pingInterval);
       removeUserFromRoom(roomId, userId);
+
+      await removeRoomUser(roomId, userData.user_id);
+
+      const updatedUsers = await getRoomUsers(roomId);
+
+      broadcastToRoom(roomId, { type: 'usersUpdated', data: updatedUsers });
+      
       console.log(`User #${userId} disconnected from room ${roomCode}`);
     });
 
