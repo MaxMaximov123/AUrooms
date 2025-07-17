@@ -16,6 +16,19 @@
   <div class="app-container" :class="{ 'mobile-layout': isMobile, 'desktop-layout': !isMobile }">
     <!-- Mobile layout -->
     <template v-if="isMobile">
+      <!-- Room info (top of screen) -->
+      <div class="room-info-mobile" v-if="!loginDialog">
+        <div class="room-code">Комната: {{ roomCode }}</div>
+        <div class="room-actions">
+          <q-btn flat round dense icon="content_copy" @click="copyRoomCode" />
+          <q-btn flat round dense icon="share" @click="shareRoom" />
+          <q-btn flat round dense icon="logout" @click="leaveRoom" />
+          <q-avatar v-if="telegramPhotoUrl" size="32px">
+            <img :src="telegramPhotoUrl" />
+          </q-avatar>
+        </div>
+      </div>
+
       <!-- Search bar (always visible) -->
       <div class="search-bar">
         <q-btn 
@@ -131,8 +144,21 @@
     <!-- Desktop layout -->
     <template v-else>
       <div class="desktop-content">
-        <!-- Left side - Queue -->
+        <!-- Left side - Room info and Queue -->
         <div class="queue-section">
+          <!-- Room info block -->
+          <div class="room-info-desktop" v-if="!loginDialog">
+            <div class="room-code">Комната: {{ roomCode }}</div>
+            <div class="room-actions">
+              <q-btn flat round dense icon="content_copy" @click="copyRoomCode" />
+              <q-btn flat round dense icon="share" @click="shareRoom" />
+              <q-btn flat round dense icon="logout" @click="leaveRoom" />
+              <q-avatar v-if="telegramPhotoUrl" size="32px">
+                <img :src="telegramPhotoUrl" />
+              </q-avatar>
+            </div>
+          </div>
+
           <q-scroll-area class="scroll-area">
             <q-list v-if="queue.length" dense bordered padding class="rounded-borders queue-list">
               <q-item 
@@ -265,8 +291,13 @@ export default {
       isSearching: false,
       isMobile: false,
       roomCode: '',
-      showSearchResults: false, // По умолчанию скрыто на мобильных
+      showSearchResults: false,
     };
+  },
+  computed: {
+    telegramPhotoUrl() {
+      return window?.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url || null;
+    }
   },
   methods: {
     truncateText(text, maxLength) {
@@ -299,6 +330,48 @@ export default {
         }
       } catch (e) {
         console.error('Комната не найдена', e);
+      }
+    },
+
+    copyRoomCode() {
+      navigator.clipboard.writeText(this.roomCode)
+        .then(() => {
+          this.$q.notify({
+            message: 'Код комнаты скопирован',
+            color: 'positive'
+          });
+        })
+        .catch(err => {
+          console.error('Ошибка копирования:', err);
+        });
+    },
+
+    shareRoom() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'Присоединяйтесь к моей музыкальной комнате',
+          text: `Код комнаты: ${this.roomCode}`,
+          url: window.location.href
+        }).catch(err => {
+          console.error('Ошибка при попытке поделиться:', err);
+        });
+      } else {
+        this.copyRoomCode();
+        this.$q.notify({
+          message: 'Ссылка скопирована в буфер',
+          color: 'positive'
+        });
+      }
+    },
+
+    leaveRoom() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('room');
+      window.history.replaceState({}, '', url);
+      this.loginDialog = true;
+      this.roomCode = '';
+      if (this.ws) {
+        this.ws.close();
       }
     },
 
@@ -510,18 +583,14 @@ export default {
     },
 
     handleOrientationChange() {
-      // При изменении ориентации перезагружаем страницу
       window.location.reload();
-
     }
   },
   mounted() {
     this.keepConnectionToWS();
     this.checkScreenSize();
     
-    // Обработка изменения ориентации
     window.addEventListener('orientationchange', this.handleOrientationChange);
-    
     window.addEventListener('resize', this.checkScreenSize);
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -568,6 +637,29 @@ export default {
   bottom: 0;
 
   &.mobile-layout {
+    .room-info-mobile {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: #1e1e1e;
+      border-bottom: 1px solid #333;
+      
+      .room-code {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      
+      .room-actions {
+        display: flex;
+        gap: 8px;
+        
+        button {
+          color: white;
+        }
+      }
+    }
+
     .search-bar {
       padding: 10px;
       background: #1e1e1e;
@@ -656,6 +748,29 @@ export default {
         border-right: 1px solid #333;
         display: flex;
         flex-direction: column;
+
+        .room-info-desktop {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          background: #1e1e1e;
+          border-bottom: 1px solid #333;
+          
+          .room-code {
+            font-size: 16px;
+            font-weight: 500;
+          }
+          
+          .room-actions {
+            display: flex;
+            gap: 8px;
+            
+            button {
+              color: white;
+            }
+          }
+        }
 
         .scroll-area {
           height: 100%;
