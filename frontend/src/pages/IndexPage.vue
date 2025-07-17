@@ -12,75 +12,235 @@
       </q-card-section>
     </q-card>
   </q-dialog>
-  <q-splitter v-model="splitterValue" class="splitter" :horizontal="isSplitterHorizontal">
-    <template v-slot:before>
-      <div class="search-container">
-        <q-input dark Standard v-model="searchRequest" :loading="isSearching" input-class="text-left text-h6" class=""
-          @keyup.enter="() => {
-    this.isSearching = true;
-    this.ws.send(
-      JSON.stringify({ type: 'searchMusic', data: searchRequest })
-    );
-  }">
+
+  <div class="app-container" :class="{ 'mobile-layout': isMobile, 'desktop-layout': !isMobile }">
+    <!-- Mobile layout -->
+    <template v-if="isMobile">
+      <!-- Search bar (always visible) -->
+      <div class="search-bar">
+        <q-btn 
+          v-show="showSearchResults" 
+          flat 
+          round 
+          dense 
+          icon="arrow_back" 
+          class="back-button" 
+          @click="closeSearchResults"
+        />
+        <q-input 
+          dark 
+          standout 
+          v-model="searchRequest" 
+          :loading="isSearching" 
+          placeholder="Поиск музыки"
+          class="search-input dark-input"
+          @focus="onSearchFocus"
+          @keyup.enter="performSearch"
+        >
+          <template v-slot:append>
+            <q-icon name="search" @click="performSearch" />
+          </template>
         </q-input>
-        <q-scroll-area style="height: 45lvh;">
-          <q-list v-if="this.searchResults.length" dense bordered padding class="rounded-borders">
-            <q-item clickable v-ripple v-for="track in this.searchResults" :key="track.id" @click="
-    this.addMusicInQueue(track)
-    ">
-              <q-avatar size="50px" :rounded="track.objType === 'album'" class="">
-                <img :src="track.coverUri">
-              </q-avatar>
-              <q-avatar size="25px" class="q-mr-none" style="right: 15px; top: 30px">
-                <img
-                  :src="track.type === 'yandex' ? 'https://img.icons8.com/?size=100&id=9OFkKNlsMDfv&format=png&color=000000' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Circle-icons-music.svg/1024px-Circle-icons-music.svg.png'">
-              </q-avatar>
-              <q-item-section class="q-ml-md">
-                <q-item-label>{{ track.title }}</q-item-label>
-                <q-item-label caption>{{ track.artists.join(", ") }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
+      </div>
+
+      <!-- Content area -->
+      <div 
+        class="content-area" 
+        :class="{ 'search-mode': showSearchResults }"
+      >
+        <q-scroll-area class="scroll-area">
+          <template v-if="showSearchResults">
+            <q-list v-if="searchResults.length" dense bordered padding class="rounded-borders search-results">
+              <q-item 
+                clickable 
+                v-ripple 
+                v-for="track in searchResults" 
+                :key="track.id" 
+                @click="addMusicInQueue(track)"
+              >
+                <q-avatar size="50px" :rounded="track.objType === 'album'">
+                  <img :src="track.coverUri">
+                </q-avatar>
+                <q-avatar size="25px" class="q-mr-none" style="right: 15px; top: 30px">
+                  <img :src="track.type === 'yandex' ? 'https://img.icons8.com/?size=100&id=9OFkKNlsMDfv&format=png&color=000000' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Circle-icons-music.svg/1024px-Circle-icons-music.svg.png'">
+                </q-avatar>
+                <q-item-section class="q-ml-md" style="overflow: hidden;">
+                  <q-item-label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+                    {{ truncateText(track.title, 30) }}
+                  </q-item-label>
+                  <q-item-label caption style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+                    {{ truncateText(track.artists.join(", "), 30) }}
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+            <div v-else class="empty-state">
+              <q-icon name="search" size="xl" />
+              <p>Введите запрос для поиска</p>
+            </div>
+          </template>
+          <template v-else>
+            <q-list v-if="queue.length" dense bordered padding class="rounded-borders queue-list">
+              <q-item 
+                clickable 
+                v-ripple 
+                v-for="track in queue" 
+                :key="track.id" 
+                @click="setMusic(track)"
+              >
+                <q-avatar size="50px" :rounded="track.objType === 'album'">
+                  <img :src="track.coverUri">
+                </q-avatar>
+                <q-avatar size="25px" class="q-mr-none" style="right: 15px; top: 30px">
+                  <img :src="track.type === 'yandex' ? 'https://img.icons8.com/?size=100&id=9OFkKNlsMDfv&format=png&color=000000' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Circle-icons-music.svg/1024px-Circle-icons-music.svg.png'">
+                </q-avatar>
+                <q-item-section class="q-ml-md" style="overflow: hidden;">
+                  <q-item-label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+                    {{ truncateText(track.title, 30) }}
+                  </q-item-label>
+                  <q-item-label caption style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+                    {{ truncateText(track.artists.join(", "), 30) }}
+                  </q-item-label>
+                </q-item-section>
+                <q-spinner-audio v-show="track.isPlaying" color="secondary" size="30" />
+              </q-item>
+            </q-list>
+            <div v-else class="empty-state">
+              <q-icon name="queue_music" size="xl" />
+              <p>Очередь пуста</p>
+            </div>
+          </template>
         </q-scroll-area>
-        <q-scroll-area style="height: 45lvh;">
-          <q-list v-if="this.queue.length" dense bordered padding class="rounded-borders">
-            <q-item clickable v-ripple v-for="track in this.queue" :key="track.id" @click="
-    this.setMusic(track)
-    ">
-              <q-avatar size="50px" class=""
-              :rounded="track.objType === 'album'">
-                <img :src="track.coverUri">
-              </q-avatar>
-              <q-avatar size="25px" class="q-mr-none" style="right: 15px; top: 30px">
-                <img
-                  :src="track.type === 'yandex' ? 'https://img.icons8.com/?size=100&id=9OFkKNlsMDfv&format=png&color=000000' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Circle-icons-music.svg/1024px-Circle-icons-music.svg.png'">
-              </q-avatar>
-              <q-item-section class="q-ml-md">
-                <q-item-label>{{ track.title }}</q-item-label>
-                <q-item-label caption>{{ track.artists.join(", ") }}</q-item-label>
-              </q-item-section>
-              <q-spinner-audio v-show="track.isPlaying" color="secondary" size="30" />
-            </q-item>
-          </q-list>
-        </q-scroll-area>
+      </div>
+
+      <!-- Player (fixed at bottom) -->
+      <div class="player-container">
+        <AudioPlayer 
+          ref="audioPlayer" 
+          :option="audioPlayerOptions" 
+          @loadedmetadata="onMetadataLoaded"
+          @timeupdate="updateMusicCurrentTimePing" 
+          @progress-click="onProgressClick" 
+          @play="onPlay" 
+          @pause="onPause"
+          @nextTrack="onNextTrack" 
+        />
       </div>
     </template>
 
-    <template v-slot:after>
-      <div class="audio-player-container">
-        <AudioPlayer ref="audioPlayer" :option="audioPlayerOptions" @loadedmetadata="onMetadataLoaded"
-          @timeupdate="updateMusicCurrentTimePing" @progress-click="onProgressClick" @play="onPlay" @pause="onPause"
-          @progress-start="console.log('progress-start')" @progress-end="console.log('progress-end')"
-          @nextTrack="onNextTrack" />
+    <!-- Desktop layout -->
+    <template v-else>
+      <div class="desktop-content">
+        <!-- Left side - Queue -->
+        <div class="queue-section">
+          <q-scroll-area class="scroll-area">
+            <q-list v-if="queue.length" dense bordered padding class="rounded-borders queue-list">
+              <q-item 
+                clickable 
+                v-ripple 
+                v-for="track in queue" 
+                :key="track.id" 
+                @click="setMusic(track)"
+              >
+                <q-avatar size="50px" :rounded="track.objType === 'album'">
+                  <img :src="track.coverUri">
+                </q-avatar>
+                <q-avatar size="25px" class="q-mr-none" style="right: 15px; top: 30px">
+                  <img :src="track.type === 'yandex' ? 'https://img.icons8.com/?size=100&id=9OFkKNlsMDfv&format=png&color=000000' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Circle-icons-music.svg/1024px-Circle-icons-music.svg.png'">
+                </q-avatar>
+                <q-item-section class="q-ml-md" style="overflow: hidden;">
+                  <q-item-label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
+                    {{ truncateText(track.title, 40) }}
+                  </q-item-label>
+                  <q-item-label caption style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
+                    {{ truncateText(track.artists.join(", "), 40) }}
+                  </q-item-label>
+                </q-item-section>
+                <q-spinner-audio v-show="track.isPlaying" color="secondary" size="30" />
+              </q-item>
+            </q-list>
+            <div v-else class="empty-state">
+              <q-icon name="queue_music" size="xl" />
+              <p>Очередь пуста</p>
+            </div>
+          </q-scroll-area>
+        </div>
+
+        <!-- Right side - Search and Player -->
+        <div class="right-section">
+          <!-- Search bar -->
+          <div class="search-bar">
+            <q-input 
+              dark 
+              standout 
+              v-model="searchRequest" 
+              :loading="isSearching" 
+              placeholder="Поиск музыки"
+              class="search-input dark-input"
+              @keyup.enter="performSearch"
+            >
+              <template v-slot:append>
+                <q-icon name="search" @click="performSearch" />
+              </template>
+            </q-input>
+          </div>
+
+          <!-- Search results (always visible in desktop) -->
+          <div class="search-results-section">
+            <q-scroll-area class="scroll-area">
+              <q-list v-if="searchResults.length" dense bordered padding class="rounded-borders search-results">
+                <q-item 
+                  clickable 
+                  v-ripple 
+                  v-for="track in searchResults" 
+                  :key="track.id" 
+                  @click="addMusicInQueue(track)"
+                >
+                  <q-avatar size="50px" :rounded="track.objType === 'album'">
+                    <img :src="track.coverUri">
+                  </q-avatar>
+                  <q-avatar size="25px" class="q-mr-none" style="right: 15px; top: 30px">
+                    <img :src="track.type === 'yandex' ? 'https://img.icons8.com/?size=100&id=9OFkKNlsMDfv&format=png&color=000000' : 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Circle-icons-music.svg/1024px-Circle-icons-music.svg.png'">
+                  </q-avatar>
+                  <q-item-section class="q-ml-md" style="overflow: hidden;">
+                    <q-item-label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
+                      {{ truncateText(track.title, 40) }}
+                    </q-item-label>
+                    <q-item-label caption style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
+                      {{ truncateText(track.artists.join(", "), 40) }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+              <div v-else class="empty-state">
+                <q-icon name="search" size="xl" />
+                <p>Введите запрос для поиска</p>
+              </div>
+            </q-scroll-area>
+          </div>
+
+          <!-- Player (fixed at bottom of right section) -->
+          <div class="player-container">
+            <AudioPlayer 
+              ref="audioPlayer" 
+              :option="audioPlayerOptions" 
+              @loadedmetadata="onMetadataLoaded"
+              @timeupdate="updateMusicCurrentTimePing" 
+              @progress-click="onProgressClick" 
+              @play="onPlay" 
+              @pause="onPause"
+              @nextTrack="onNextTrack" 
+            />
+          </div>
+        </div>
       </div>
     </template>
-  </q-splitter>
+  </div>
 </template>
 
 <script>
 import axios from 'axios';
 import AudioPlayer from '../components/AudioPlayer.vue';
-// import 'vue3-audio-player/dist/style.css';
 
 export default {
   components: {
@@ -100,16 +260,20 @@ export default {
       wsIsConnected: true,
       searchRequest: '',
       searchResults: [],
-      splitterValue: 20,
       volume: 0.2,
       loginDialog: true,
       isSearching: false,
-      screenWidth: null,
-      isSplitterHorizontal: true,
+      isMobile: false,
       roomCode: '',
+      showSearchResults: false, // По умолчанию скрыто на мобильных
     };
   },
   methods: {
+    truncateText(text, maxLength) {
+      if (!text) return '';
+      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    },
+
     async createRoom() {
       try {
         const userId = window?.Telegram?.WebApp?.initDataUnsafe?.user?.id || Math.floor(Math.random() * 10000);
@@ -138,6 +302,18 @@ export default {
       }
     },
 
+    onSearchFocus() {
+      if (this.isMobile) {
+        this.showSearchResults = true;
+      }
+    },
+
+    closeSearchResults() {
+      if (this.isMobile) {
+        this.showSearchResults = false;
+      }
+    },
+
     async keepConnectionToWS() {
       while (true) {
         if (!this.wsIsConnected) {
@@ -150,9 +326,8 @@ export default {
     async waitForTimeout(time) {
       await new Promise((resolve) => setTimeout(resolve, time));
     },
-    connectToServer() {
-      // this.ws = new WebSocket('ws://192.168.1.6:8000');
 
+    connectToServer() {
       const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
       const host = window.location.host
       this.ws = new WebSocket(`${protocol}://${host}/ws/${this.roomCode}`)
@@ -160,8 +335,11 @@ export default {
       this.ws.onopen = () => {
         console.log('Connected to WebSocket server');
         this.wsIsConnected = true;
-        // this.ws.send(JSON.stringify({ type: 'joinMusic' }));
-        // console.log(`>> joinMusic`);
+        this.pingInterval = setInterval(() => {
+          if (this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'pong' }));
+          }
+        }, 30000);
       };
 
       this.ws.onmessage = (event) => {
@@ -171,6 +349,9 @@ export default {
           case 'searchMusic':
             this.searchResults = data;
             this.isSearching = false;
+            if (!this.isMobile) {
+              this.showSearchResults = true;
+            }
             break;
 
           case 'joinMusic':
@@ -220,8 +401,23 @@ export default {
       this.ws.onclose = () => {
         console.log('Disconnected from WebSocket server');
         this.wsIsConnected = false;
+        clearInterval(this.pingInterval);
+      };
+
+      this.ws.onerror = () => {
+        clearInterval(this.pingInterval);
       };
     },
+
+    performSearch() {
+      if (this.searchRequest.trim()) {
+        this.isSearching = true;
+        this.ws.send(
+          JSON.stringify({ type: 'searchMusic', data: this.searchRequest })
+        );
+      }
+    },
+
     updateAudioPlayerOptions() {
       if (this.queue.length) {
         console.log('updateAudioPlayerOptions', this.queue);
@@ -230,13 +426,14 @@ export default {
         this.audioPlayerOptions.coverImage = this.queue[0].coverUri;
         this.audioPlayerOptions.title = this.queue[0].title;
         this.audioPlayerOptions.author = `${this.queue[0].artists.join(", ")}`
-        // this.startPlaying();
       }
     },
+
     addMusicInQueue(track) {
       console.log('>>', 'addMusicInQueue', track);
       this.ws.send(JSON.stringify({ type: 'addMusicInQueue', data: track }));
     },
+
     startPlaying() {
       console.log('startPlaying');
       if (this.queue[0].isPlaying) {
@@ -245,6 +442,7 @@ export default {
         this.$refs.audioPlayer.pause();
       }
     },
+
     onMetadataLoaded() {
       const duration = this.$refs.audioPlayer.audioPlayer.duration;
 
@@ -258,6 +456,7 @@ export default {
       console.log('>>', 'setTrackDuration', duration);
       this.startPlaying();
     },
+
     updateMusicCurrentTimePing() {
       const currentTime = this.audio.currentTime;
       this.queue[0].currentTime = currentTime;
@@ -267,6 +466,7 @@ export default {
         data: currentTime
       }));
     },
+
     onProgressClick() {
       const currentTime = this.audio.currentTime;
       this.queue[0].currentTime = currentTime;
@@ -276,16 +476,16 @@ export default {
         data: currentTime
       }));
     },
+
     onPlay() {
-      // this.queue[0].isPlaying = true;
       console.log('>>', 'updateMusicIsPlaying', true);
       this.ws.send(JSON.stringify({
         type: 'updateMusicIsPlaying',
         data: { isPlaying: true }
       }));
     },
+
     onPause() {
-      // this.queue[0].isPlaying = false;
       console.log('>>', 'updateMusicIsPlaying', false);
       this.ws.send(JSON.stringify({
         type: 'updateMusicIsPlaying',
@@ -300,30 +500,30 @@ export default {
       }));
     },
 
-    onScreenResize() {
-      window.addEventListener("resize", () => { this.updateScreenWidth(); });
-    },
-    updateScreenWidth() {
-      this.screenWidth = window.innerWidth;
-
-      if (this.screenWidth > 700) {
-        this.isSplitterHorizontal = false;
+    checkScreenSize() {
+      this.isMobile = window.innerWidth < 768;
+      if (this.isMobile) {
+        document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
       } else {
-        this.splitterValue = 68;
-        this.isSplitterHorizontal = true;
+        this.showSearchResults = true;
       }
     },
+
+    handleOrientationChange() {
+      // При изменении ориентации перезагружаем страницу
+      window.location.reload();
+
+    }
   },
   mounted() {
-    this.audio = this.$refs.audioPlayer.audioPlayer;
-    this.audio.volume = this.volume;
     this.keepConnectionToWS();
+    this.checkScreenSize();
+    
+    // Обработка изменения ориентации
+    window.addEventListener('orientationchange', this.handleOrientationChange);
+    
+    window.addEventListener('resize', this.checkScreenSize);
 
-    this.updateScreenWidth();
-    this.onScreenResize();
-  },
-
-  created() {
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room');
 
@@ -332,43 +532,251 @@ export default {
       this.loginDialog = false;
       this.connectToServer();
     }
+
+    this.$nextTick(() => {
+      if (this.$refs.audioPlayer?.audioPlayer) {
+        this.audio = this.$refs.audioPlayer.audioPlayer;
+      }
+    });
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkScreenSize);
+    window.removeEventListener('orientationchange', this.handleOrientationChange);
   }
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
+:root {
+  --vh: 1vh;
+}
 
-.splitter {
-  height: 100lvh;
+.app-container {
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  width: 100vw;
+  overflow: hidden;
+  background: #121212;
+  color: white;
+  display: flex;
+  flex-direction: column;
   position: fixed;
-  width: 100lvw;
-}
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-.search-container {
-  width: 100%;
-  height: 10lvh;
-}
+  &.mobile-layout {
+    .search-bar {
+      padding: 10px;
+      background: #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 
-.audio-player-container {
-  width: 100%;
-}
+      .search-input {
+        flex: 1;
+        
+        &.dark-input {
+          :deep(.q-field__control) {
+            background: #2a2a2a !important;
+            color: white !important;
+          }
+          
+          :deep(.q-field__native) {
+            color: white !important;
+          }
+        }
+      }
 
+      .back-button {
+        color: white;
+      }
+    }
 
-@media (min-width: 700px) {
-  .splitter {
-    height: 100lvh;
-    position: fixed;
+    .content-area {
+      flex: 1;
+      overflow: hidden;
+      transition: all 0.3s ease;
+
+      &.search-mode {
+        background: #1e1e1e;
+      }
+
+      .scroll-area {
+        height: 100%;
+        width: 100%;
+
+        .empty-state {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          color: #666;
+          padding: 20px;
+          text-align: center;
+
+          p {
+            margin-top: 10px;
+            font-size: 16px;
+          }
+        }
+
+        .queue-list, .search-results {
+          background: #1e1e1e;
+          border-radius: 12px;
+          margin: 10px;
+          border: 1px solid #333;
+        }
+      }
+    }
+
+    .player-container {
+      background: #1e1e1e;
+      padding: 10px;
+      border-top: 1px solid #333;
+      position: sticky;
+      bottom: 0;
+    }
   }
 
-  .search-container {
-    width: 100%;
-    height: 100%;
-  }
+  &.desktop-layout {
+    .desktop-content {
+      display: flex;
+      height: 100%;
+      width: 100%;
 
-  .audio-player-container {
-    width: 100%;
-    height: 100%;
+      .queue-section {
+        width: 40%;
+        max-width: 400px;
+        border-right: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+
+        .scroll-area {
+          height: 100%;
+          padding: 10px;
+
+          .empty-state {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            padding: 20px;
+            text-align: center;
+
+            p {
+              margin-top: 10px;
+              font-size: 16px;
+            }
+          }
+
+          .queue-list {
+            background: #1e1e1e;
+            border-radius: 12px;
+            border: 1px solid #333;
+          }
+        }
+      }
+
+      .right-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+
+        .search-bar {
+          padding: 10px;
+          background: #1e1e1e;
+          border-bottom: 1px solid #333;
+
+          .search-input {
+            width: 100%;
+            
+            &.dark-input {
+              :deep(.q-field__control) {
+                background: #2a2a2a !important;
+                color: white !important;
+              }
+              
+              :deep(.q-field__native) {
+                color: white !important;
+              }
+            }
+          }
+        }
+
+        .search-results-section {
+          flex: 1;
+          overflow: hidden;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          border-bottom: 1px solid #333;
+
+          .scroll-area {
+            flex: 1;
+            width: 100%;
+            padding: 10px;
+
+            .empty-state {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              color: #666;
+              padding: 20px;
+              text-align: center;
+
+              p {
+                margin-top: 10px;
+                font-size: 16px;
+              }
+            }
+
+            .search-results {
+              background: #1e1e1e;
+              border-radius: 12px;
+              border: 1px solid #333;
+            }
+          }
+        }
+
+        .player-container {
+          background: #1e1e1e;
+          padding: 10px;
+        }
+      }
+    }
   }
 }
 
+.q-item {
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin-bottom: 4px;
+
+  &:hover {
+    background: #333 !important;
+  }
+}
+
+.q-item__label--caption {
+  opacity: 0.7;
+}
+
+@media screen and (orientation: landscape) {
+  .app-container.mobile-layout {
+    .content-area {
+      max-height: calc(100vh - 120px) !important;
+    }
+  }
+}
 </style>

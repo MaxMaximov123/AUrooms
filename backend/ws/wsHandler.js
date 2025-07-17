@@ -44,6 +44,13 @@ export function handleWSConnection(ws, req) {
     console.log(`>> joinMusic`, state.queue);
     ws.send(JSON.stringify({ type: 'joinMusic', data: state.queue }));
 
+    // Ping-pong keep-alive
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
+
     ws.on('message', async (message) => {
       let parsed;
       try {
@@ -54,9 +61,12 @@ export function handleWSConnection(ws, req) {
 
       const { type, data } = parsed;
 
-      console.log(`<< ${type} room: ${roomId}, user: ${userId}`, data? data : '');
+      console.log(`<< ${type} room: ${roomId}, user: ${userId}`, data ? data : '');
 
       switch (type) {
+        case 'pong':
+          // received pong from client
+          break;
         case 'addMusicInQueue': {
           const queueLength = state.queue.length;
 
@@ -127,6 +137,7 @@ export function handleWSConnection(ws, req) {
 
             const currentTrack = state.queue[0];
             if (currentTrack.duration && currentTrack.duration - currentTrack.currentTime <= 2) {
+              console.log(`Track ${currentTrack.title} finished, moving to next...`);
               // Удаляем текущий трек из БД и очереди
               console.log(`Трек "${currentTrack.title}" закончился, переход к следующему...`);
               state.queue.shift();
@@ -243,11 +254,13 @@ export function handleWSConnection(ws, req) {
     });
 
     ws.on('close', () => {
+      clearInterval(pingInterval);
       removeUserFromRoom(roomId, userId);
       console.log(`User #${userId} disconnected from room ${roomCode}`);
     });
 
     ws.on('error', (err) => {
+      clearInterval(pingInterval);
       console.warn(`WebSocket error (user #${userId}):`, err.message);
     });
   });

@@ -3,6 +3,10 @@ import { YandexMusicClient } from 'yandex-music-client/YandexMusicClient.js';
 import { YMApi } from "ym-api";
 import { WrappedYMApi } from "ym-api";
 import { getTrackUrl } from 'yandex-music-client/trackUrl.js';
+import axios from 'axios';
+import axiosRetry from 'axios-retry';
+
+axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 const wrappedApi = new WrappedYMApi();
 
@@ -63,7 +67,12 @@ async function getTracksFromYandex(name) {
 }
 
 async function getTrackUrlYandex(trackId) {
-  return await getTrackUrl(client, trackId)
+  try {
+    return await getTrackUrl(client, trackId);
+  } catch (e) {
+    console.error(`Failed to get track URL for trackId ${trackId}:`, e.message);
+    return null;
+  }
 }
 
 export { getTracksFromYandex, getTrackUrlYandex, wrappedApi };

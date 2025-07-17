@@ -54,7 +54,7 @@
             />
           </div>
           <span class="audio-player__time text-caption text-grey-7 q-ml-xs">
-            {{ formatSecond(currentTime) }}
+            {{ formatSecond(currentTime) }} / {{ totalTimeStr }}
           </span>
         </div>
       </div>
@@ -341,7 +341,7 @@ export default defineComponent({
 <style scoped lang="scss">
 .audio-player {
   width: 100%;
-  max-width: 400px;
+  // max-width: 400px;
   padding: 4px;
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
