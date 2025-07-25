@@ -17,6 +17,9 @@ export default {
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
   TELEGRAM_BOT_URL: process.env.TELEGRAM_BOT_URL || '',
 
+  YANDEX_MUSIC_API_TOKEN: process.env.YANDEX_MUSIC_API_TOKEN || '',
+  YANDEX_MUSIC_UID: Number(process.env.YANDEX_MUSIC_UID),
+
   // Время жизни комнаты (в миллисекундах)
   ROOM_TTL: parseInt(process.env.ROOM_TTL, 10) || 24 * 60 * 60 * 1000, // 24ч
 };

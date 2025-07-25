@@ -1,19 +1,10 @@
-# Use Node.js 18 LTS
-FROM node:18-alpine
+FROM node:latest
 
-WORKDIR /app
+COPY backend/package.json backend/package-lock.json ./
+RUN npm install
 
-# Копируем package.json и package-lock.json (если есть)
-COPY package*.json ./
+COPY ./ ./
 
-RUN npm ci --production
+WORKDIR "/backend"
 
-# Копируем остальной код
-COPY . .
-
-# Собираем фронтенд (если нужно)
-# RUN npm run build --prefix ../frontend
-
-EXPOSE 8000
-
-CMD ["node", "app.js"]
+CMD ["npm", "run", "start"]

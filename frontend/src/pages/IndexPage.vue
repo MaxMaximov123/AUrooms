@@ -323,7 +323,9 @@
   >
     {{ toastMessage }}
   </q-banner>
-  <q-menu v-model="showUsersMenu">
+
+
+  <!-- <q-menu v-model="showUsersMenu">
     <q-list style="min-width: 200px">
       <q-item v-for="user in roomUsers" :key="user.user_id">
         <q-avatar size="32px" class="q-mr-sm">
@@ -334,7 +336,7 @@
         </q-item-section>
       </q-item>
     </q-list>
-  </q-menu>
+  </q-menu> -->
 </template>
 
 <script>

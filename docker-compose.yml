@@ -11,21 +11,19 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "3100:5432"
+  
 
   backend:
-    build: .
     restart: always
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
     depends_on:
       - db
-    environment:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/music_app
-      PORT: 8000
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-    command: node app.js
 
 volumes:
   pgdata:

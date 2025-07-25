@@ -5,22 +5,23 @@ import { WrappedYMApi } from "ym-api";
 import { getTrackUrl } from 'yandex-music-client/trackUrl.js';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
+import config from '../config.js';
+
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 const wrappedApi = new WrappedYMApi();
 
-const yandexMusicApiToken = 'y0_AgAAAAA0pF-hAAG8XgAAAADiigFjniAKZawzSdqwTItp0HWv-21nsVw';
 
 
 const api = new YMApi();
-await api.init({ access_token: yandexMusicApiToken, uid: 883187617});
-await wrappedApi.init({ access_token: yandexMusicApiToken, uid: 883187617});
+await api.init({ access_token: config.YANDEX_MUSIC_API_TOKEN, uid: config.YANDEX_MUSIC_UID});
+await wrappedApi.init({ access_token: config.YANDEX_MUSIC_API_TOKEN, uid: config.YANDEX_MUSIC_UID});
 
 const client = new YandexMusicClient({
   BASE: "https://api.music.yandex.net:443",
   HEADERS: {
-      'Authorization': `OAuth ${yandexMusicApiToken}`,
+      'Authorization': `OAuth ${config.YANDEX_MUSIC_API_TOKEN}`,
       'Accept-Language': 'ru'
   },
 });
