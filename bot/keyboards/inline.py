@@ -14,7 +14,7 @@ def get_room_action_buttons(code: str, base_url: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="Открыть",
-            web_app=WebAppInfo(url=f"{base_url}?room={code}")
+            web_app=WebAppInfo(url=f"{base_url}/room/{code}")
         )],
         [InlineKeyboardButton(text="Поделиться", callback_data=f"share:{code}")],
         [InlineKeyboardButton(text="Удалить", callback_data=f"delete:{code}")]
