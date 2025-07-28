@@ -723,12 +723,23 @@ export default {
     window.addEventListener('orientationchange', this.handleOrientationChange);
     window.addEventListener('resize', this.checkScreenSize);
 
-    const room = this.$route.params.roomCode;
+    const initData = new URLSearchParams(window.Telegram.WebApp.initData);
+    const startParam = initData.get("start_param");
 
-    if (room) {
-      this.roomCode = room;
+    console.log('startParam', startParam);
+
+    if (startParam?.startsWith("room_")) {
+      this.roomCode = startParam.split("_")[1];
       this.loginDialog = false;
       this.connectToServer();
+    } else {
+      const room = this.$route.params.roomCode;
+
+      if (room) {
+        this.roomCode = room;
+        this.loginDialog = false;
+        this.connectToServer();
+      }
     }
 
     this.$nextTick(() => {
