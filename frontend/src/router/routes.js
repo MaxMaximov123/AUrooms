@@ -4,9 +4,10 @@ const routes = [
     component: () => import('pages/IndexPage.vue'),
   },
   {
-    path: '/test',
-    component: () => import('pages/TestPage.vue'),
-  },
+    path: '/room/:roomCode',
+    name: 'room',
+    component: () => import('pages/IndexPage.vue'),
+  }
   // {
   //   path: '/:catchAll(.*)*',
   //   component: () => import('pages/ErrorNotFound.vue')

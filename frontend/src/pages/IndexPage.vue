@@ -427,9 +427,8 @@ export default {
         const { data } = await axios.post('/api/rooms', { telegram_id: this.user.id });
         this.roomCode = data.code;
 
-        const url = new URL(window.location.href);
-        url.searchParams.set('room', this.roomCode);
-        window.history.replaceState({}, '', url);
+        this.$router.push({ name: 'room', params: { roomCode: this.roomCode } });
+
         this.loginDialog = false;
         this.connectToServer();
       } catch (e) {
@@ -443,6 +442,8 @@ export default {
         if (data) {
           this.loginDialog = false;
           this.connectToServer();
+
+          this.$router.push({ name: 'room', params: { roomCode: this.roomCode } });
         }
       } catch (e) {
         console.error('Комната не найдена', e);
@@ -484,6 +485,8 @@ export default {
       if (this.ws) {
         this.ws.close();
       }
+
+      this.$router.push('/');
     },
 
     onSearchFocus() {
@@ -720,8 +723,7 @@ export default {
     window.addEventListener('orientationchange', this.handleOrientationChange);
     window.addEventListener('resize', this.checkScreenSize);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
+    const room = this.$route.params.roomCode;
 
     if (room) {
       this.roomCode = room;
