@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram import Router, types, F
-from bot.utils import get_rooms_by_owner
-from bot.keyboards.inline import get_rooms_page
+from utils import get_rooms_by_owner
+from keyboards.inline import get_rooms_page
 
 list_rooms_handler = Router()
 

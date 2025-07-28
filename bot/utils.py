@@ -1,11 +1,11 @@
 import random
 import string
 from sqlalchemy import select, delete
-from bot.db.models import Room
-from bot.db.session import async_session
+from db.models import Room
+from db.session import async_session
 from sqlalchemy import select
-from bot.db.models import User
-from bot.db.session import async_session
+from db.models import User
+from db.session import async_session
 
 async def get_or_create_user(telegram_id: int) -> User:
     async with async_session() as session:

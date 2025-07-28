@@ -27,13 +27,12 @@ services:
   
   bot:
     build:
-      context: .
-      dockerfile: bot/Dockerfile
+      context: ./bot
+      dockerfile: Dockerfile
     restart: always
     env_file: .env
     depends_on:
       - db
-    command: ["python", "-m", "bot.main"]
 
 volumes:
   pgdata:

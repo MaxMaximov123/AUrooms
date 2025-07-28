@@ -1,7 +1,7 @@
 from aiogram import Router, types
-from bot.keyboards.inline import get_open_room_button
-from bot.utils import create_room
-from bot.config import WEB_APP_URL
+from keyboards.inline import get_open_room_button
+from utils import create_room
+from config import WEB_APP_URL
 from aiogram import Router, types, F
 
 create_room_handler = Router()

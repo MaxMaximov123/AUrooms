@@ -1,12 +1,12 @@
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery
-from bot.utils import get_rooms_by_owner, delete_room
+from utils import get_rooms_by_owner, delete_room
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from bot.config import WEB_APP_URL
-from bot.keyboards.inline import (
+from config import WEB_APP_URL
+from keyboards.inline import (
     get_rooms_page, get_open_room_button, get_room_action_buttons
 )
-from bot.config import WEB_APP_URL
+from config import WEB_APP_URL
 
 callback_handler = Router()
 
