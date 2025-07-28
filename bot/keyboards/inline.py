@@ -16,7 +16,7 @@ def get_room_action_buttons(code: str, base_url: str) -> InlineKeyboardMarkup:
             text="Открыть",
             web_app=WebAppInfo(url=f"{base_url}?room={code}")
         )],
-        [InlineKeyboardButton(text="Поделиться", switch_inline_query=f"t.me/music_together_bot/AUrooms/room/{code}")],
+        [InlineKeyboardButton(text="Поделиться", callback_data=f"share:{code}")],
         [InlineKeyboardButton(text="Удалить", callback_data=f"delete:{code}")]
     ])
 

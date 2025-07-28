@@ -25,15 +25,15 @@ services:
     ports:
       - "8000:8000"
   
-  # bot:
-  #   build:
-  #     context: .
-  #     dockerfile: bot/Dockerfile
-  #   restart: always
-  #   env_file: .env
-  #   depends_on:
-  #     - db
-  #   command: ["python", "-m", "bot.main"]
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    restart: always
+    env_file: .env
+    depends_on:
+      - db
+    command: ["python", "-m", "bot.main"]
 
 volumes:
   pgdata:

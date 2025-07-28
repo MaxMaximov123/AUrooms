@@ -36,14 +36,18 @@ async def share_room(callback: types.CallbackQuery):
     text = f"{callback.from_user.full_name} приглашает вас присоединиться к прослушиванию музыки 🎶"
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="Открыть комнату",
-            switch_inline_query=f"t.me/music_together_bot/AUrooms?room={code}"
-            # web_app=WebAppInfo(url=f"{WEB_APP_URL}?room={code}")
-        )]
+        [
+            InlineKeyboardButton(
+                text="Открыть",
+                url=f"t.me/music_together_bot/AUrooms?startapp=room_{code}"
+            )
+        ]
     ])
 
-    await callback.message.answer(text, reply_markup=keyboard)
+    await callback.message.answer(
+        f"🎵 {callback.from_user.full_name} приглашает вас присоединиться к комнате!",
+        reply_markup=keyboard
+    )
     await callback.answer("Сообщение отправлено, вы можете его переслать!")
 
 @callback_handler.callback_query(F.data.startswith("delete:"))
