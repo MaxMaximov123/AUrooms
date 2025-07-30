@@ -447,6 +447,7 @@ export default {
         }
       } catch (e) {
         console.error('Комната не найдена', e);
+        this.$router.push({ name: 'home' });
         this.showToastMessage('Комната не найдена', 'negative');
       }
     },
@@ -477,16 +478,12 @@ export default {
     },
 
     leaveRoom() {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('room');
-      window.history.replaceState({}, '', url);
+      this.$router.push({ name: 'home' });
       this.loginDialog = true;
       this.roomCode = '';
       if (this.ws) {
         this.ws.close();
       }
-
-      this.$router.push('/');
     },
 
     onSearchFocus() {
@@ -730,17 +727,15 @@ export default {
 
     if (startParam?.startsWith("room_")) {
       this.roomCode = startParam.split("_")[1];
-      this.loginDialog = false;
-      this.connectToServer();
     } else {
       const room = this.$route.params.roomCode;
 
       if (room) {
         this.roomCode = room;
-        this.loginDialog = false;
-        this.connectToServer();
       }
     }
+
+    this.joinRoom();
 
     this.$nextTick(() => {
       if (this.$refs.audioPlayer?.audioPlayer) {
