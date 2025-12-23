@@ -712,6 +712,16 @@ export default {
     handleOrientationChange() {
       window.location.reload();
     }
+    ,
+    handleMediaKeyDown(e) {
+      const key = e.key || e.code || '';
+      // Common media-next identifiers across platforms/browsers
+      const isNext = key === 'MediaTrackNext' || key === 'MediaNextTrack' || key === 'XF86AudioNext' || key === 'AudioNext';
+      if (isNext) {
+        try { e.preventDefault(); } catch (_) {}
+        this.onNextTrack();
+      }
+    }
   },
   mounted() {
     this.keepConnectionToWS();
@@ -719,6 +729,7 @@ export default {
     
     window.addEventListener('orientationchange', this.handleOrientationChange);
     window.addEventListener('resize', this.checkScreenSize);
+    window.addEventListener('keydown', this.handleMediaKeyDown);
 
     const initData = new URLSearchParams(window.Telegram.WebApp.initData);
     const startParam = initData.get("start_param");
@@ -756,6 +767,7 @@ export default {
   beforeUnmount() {
     window.removeEventListener('resize', this.checkScreenSize);
     window.removeEventListener('orientationchange', this.handleOrientationChange);
+    window.removeEventListener('keydown', this.handleMediaKeyDown);
   }
 };
 </script>

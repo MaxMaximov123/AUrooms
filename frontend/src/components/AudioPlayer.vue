@@ -143,6 +143,7 @@ export default defineComponent({
     const option_ = ref(mergeOption(props.option))
     let toucher = null
     let timer = null
+    const hasMediaSession = typeof navigator !== 'undefined' && 'mediaSession' in navigator
     const state = reactive({
       isPlaying: false,
       isDragging: false,
@@ -170,6 +171,17 @@ export default defineComponent({
       audioProgress.value.style.width = `${offsetLeft}px`
       setPointPosition(offsetLeft)
       emit('playing')
+
+      // Sync Media Session position state during playback
+      if (hasMediaSession && typeof navigator.mediaSession.setPositionState === 'function') {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audioPlayer.value.duration || state.totalTime || 0,
+            playbackRate: audioPlayer.value.playbackRate || 1,
+            position: audioPlayer.value.currentTime || state.currentTime || 0,
+          })
+        } catch (_) {}
+      }
     }
 
     const startTimer = () => {
@@ -191,6 +203,10 @@ export default defineComponent({
         .then(() => {
           startTimer()
           setTotalTime(audioPlayer.value.duration)
+          // Update Media Session playback state
+          if (hasMediaSession) {
+            try { navigator.mediaSession.playbackState = 'playing' } catch (_) {}
+          }
         })
         .catch((error) => {
           emit('play-error', error)
@@ -200,6 +216,10 @@ export default defineComponent({
     const pause = () => {
       audioPlayer.value.pause()
       state.isPlaying = false
+      // Update Media Session playback state
+      if (hasMediaSession) {
+        try { navigator.mediaSession.playbackState = 'paused' } catch (_) {}
+      }
     }
 
     const togglePlayer = () => {
@@ -225,19 +245,44 @@ export default defineComponent({
 
     const onAudioPause = () => {
       state.isPlaying = false
+      if (hasMediaSession) {
+        try { navigator.mediaSession.playbackState = 'paused' } catch (_) {}
+      }
     }
 
     const onAudioPlay = () => {
       state.isPlaying = true
+      if (hasMediaSession) {
+        try { navigator.mediaSession.playbackState = 'playing' } catch (_) {}
+      }
     }
 
     const onLoadMetaData = (e) => {
       setTotalTime(e.target.duration)
       emit('loadedmetadata', e)
+      // Ensure position state reflects freshly loaded metadata
+      if (hasMediaSession && typeof navigator.mediaSession.setPositionState === 'function') {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: e.target.duration || 0,
+            playbackRate: audioPlayer.value?.playbackRate || 1,
+            position: audioPlayer.value?.currentTime || 0,
+          })
+        } catch (_) {}
+      }
     }
 
     const onTimeUpdate = (event) => {
       emit('timeupdate', event)
+      if (hasMediaSession && typeof navigator.mediaSession.setPositionState === 'function') {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audioPlayer.value?.duration || state.totalTime || 0,
+            playbackRate: audioPlayer.value?.playbackRate || 1,
+            position: audioPlayer.value?.currentTime || state.currentTime || 0,
+          })
+        } catch (_) {}
+      }
     }
 
     const setPointPosition = (offsetLeft) => {
@@ -291,6 +336,24 @@ export default defineComponent({
       (newValue) => {
         option_.value = mergeOption(newValue)
         initState()
+        // Update Media Session metadata when track changes
+        if (hasMediaSession) {
+          try {
+            const artworkSrc = option_.value.coverImage || CoverImageDefault
+            navigator.mediaSession.metadata = new window.MediaMetadata({
+              title: option_.value.title || 'Untitled',
+              artist: option_.value.author || 'Unknown artist',
+              album: '',
+              artwork: [
+                { src: artworkSrc, sizes: '96x96', type: 'image/png' },
+                { src: artworkSrc, sizes: '128x128', type: 'image/png' },
+                { src: artworkSrc, sizes: '192x192', type: 'image/png' },
+                { src: artworkSrc, sizes: '256x256', type: 'image/png' },
+                { src: artworkSrc, sizes: '512x512', type: 'image/png' },
+              ],
+            })
+          } catch (_) {}
+        }
         if (option_.value.autoPlay) {
           nextTick(() => {
             play()
@@ -305,6 +368,61 @@ export default defineComponent({
         preventDefault: false,
       })
       toucher.use(Pan)
+
+      // Media Session action handlers
+      if (hasMediaSession) {
+        try {
+          navigator.mediaSession.setActionHandler('play', () => {
+            emit('play')
+          })
+          navigator.mediaSession.setActionHandler('pause', () => {
+            emit('pause')
+          })
+          navigator.mediaSession.setActionHandler('nexttrack', () => {
+            emit('nextTrack')
+          })
+          navigator.mediaSession.setActionHandler('previoustrack', () => {
+            // Fallback: restart current track if playing far enough
+            const ct = audioPlayer.value?.currentTime || 0
+            if (ct > 3) {
+              audioPlayer.value.currentTime = 0
+            } else {
+              // If app later supports previous track, emit a custom event
+              // emit('prevTrack')
+              audioPlayer.value.currentTime = 0
+            }
+          })
+          navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (!audioPlayer.value) return
+            const seekTime = details.seekTime || 0
+            if (details.fastSeek && typeof audioPlayer.value.fastSeek === 'function') {
+              try { audioPlayer.value.fastSeek(seekTime) } catch (_) { audioPlayer.value.currentTime = seekTime }
+            } else {
+              audioPlayer.value.currentTime = seekTime
+            }
+            // Inform app about explicit seek action
+            emit('progress-click', { type: 'mediasession-seekto', seekTime })
+          })
+          navigator.mediaSession.setActionHandler('seekforward', (details) => {
+            if (!audioPlayer.value) return
+            const step = details.seekOffset || 10
+            audioPlayer.value.currentTime = Math.min(
+              (audioPlayer.value.currentTime || 0) + step,
+              audioPlayer.value.duration || state.totalTime || 0
+            )
+            emit('progress-click', { type: 'mediasession-seekforward', step })
+          })
+          navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+            if (!audioPlayer.value) return
+            const step = details.seekOffset || 10
+            audioPlayer.value.currentTime = Math.max(
+              (audioPlayer.value.currentTime || 0) - step,
+              0
+            )
+            emit('progress-click', { type: 'mediasession-seekbackward', step })
+          })
+        } catch (_) {}
+      }
     })
 
     onUnmounted(() => {
