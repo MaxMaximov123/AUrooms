@@ -13,7 +13,7 @@ axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 const wrappedApi = new WrappedYMApi();
 
 
-
+console.log(config);
 const api = new YMApi();
 await api.init({ access_token: config.YANDEX_MUSIC_API_TOKEN, uid: config.YANDEX_MUSIC_UID});
 await wrappedApi.init({ access_token: config.YANDEX_MUSIC_API_TOKEN, uid: config.YANDEX_MUSIC_UID});
