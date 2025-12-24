@@ -38,7 +38,7 @@ async function getTracksFromYandex(name) {
       answer.push({
         id: track.id,
         title: track.title,
-        coverUri: 'https://' + track.coverUri.replace('%%', '200x200'),
+        coverUri: 'https://' + track.coverUri.replace('%%', '800x800'),
         artists: track.artists.map(artist => artist.name),
         type: 'yandex',
         objType: 'track'
