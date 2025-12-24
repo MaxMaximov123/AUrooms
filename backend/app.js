@@ -25,14 +25,6 @@ app.use(express.json());
 app.use('/api/rooms', roomsRouter);
 app.use('/api/tracks', tracksRouter);
 
-// Статический frontend
-const frontendDist = path.join(__dirname, '../frontend/dist/spa');
-app.use(express.static(frontendDist));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendDist, 'index.html'));
-});
-
 // WebSocket
 wss.on('connection', handleWSConnection);
 

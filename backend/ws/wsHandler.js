@@ -274,11 +274,12 @@ export function handleWSConnection(ws, req) {
       clearInterval(pingInterval);
       removeUserFromRoom(roomId, userId);
 
-      await removeRoomUser(roomId, userData.user_id);
-
-      const updatedUsers = await getRoomUsers(roomId);
-
-      broadcastToRoom(roomId, { type: 'usersUpdated', data: updatedUsers });
+      // Only remove user if they sent joinMusic (userData.user_id is set)
+      if (userData && userData.user_id) {
+        await removeRoomUser(roomId, userData.user_id);
+        const updatedUsers = await getRoomUsers(roomId);
+        broadcastToRoom(roomId, { type: 'usersUpdated', data: updatedUsers });
+      }
       
       console.log(`User #${userId} disconnected from room ${roomCode}`);
     });
