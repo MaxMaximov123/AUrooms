@@ -184,7 +184,7 @@
                 v-for="(user, index) in roomUsers.slice(0, 3)"
                 :key="user.user_id"
                 size="32px"
-                :class="['overlapping-user', { 'heart-bg': user.user_id == '1387680086' }]"
+                :class="['overlapping-user', { 'heart-bg': user.user_id == '1862750540' }]"
                 :style="{
                   left: `${index * 20}px`,
                   zIndex: 100 - index,
@@ -1053,7 +1053,7 @@ export default {
   border-color: #ff4d6a;
 
   &::before {
-    content: '⭐️';
+    content: '🩷';
     position: absolute;
     top: -6px;
     right: -6px;
