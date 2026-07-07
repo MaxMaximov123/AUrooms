@@ -24,11 +24,11 @@
           <q-btn flat round dense icon="share" @click="shareRoom" />
           <q-btn flat round dense icon="logout" @click="leaveRoom" />
           <div class="room-users" @click="showUsersMenu = !showUsersMenu">
-            <q-avatar 
-              v-for="(user, index) in roomUsers.slice(0, 3)" 
+            <q-avatar
+              v-for="(user, index) in roomUsers.slice(0, 3)"
               :key="user.user_id"
               size="32px"
-              class="overlapping-user"
+              :class="['overlapping-user', { 'heart-bg': user.user_id === 1862750540 }]"
               :style="{
                 left: `${index * 20}px`,
                 zIndex: 100 - index,
@@ -38,8 +38,8 @@
               <img :src="user.photo_url || 'https://cdn.quasar.dev/img/avatar.png'" />
             </q-avatar>
 
-            <span 
-              v-if="roomUsers.length > 3" 
+            <span
+              v-if="roomUsers.length > 3"
               class="users-count"
               :style="{
                 position: 'absolute',
@@ -180,11 +180,11 @@
               <q-btn flat round dense icon="share" @click="shareRoom" />
               <q-btn flat round dense icon="logout" @click="leaveRoom" />
               <div class="room-users" @click="showUsersMenu = !showUsersMenu">
-               <q-avatar 
-                v-for="(user, index) in roomUsers.slice(0, 3)" 
+               <q-avatar
+                v-for="(user, index) in roomUsers.slice(0, 3)"
                 :key="user.user_id"
                 size="32px"
-                class="overlapping-user"
+                :class="['overlapping-user', { 'heart-bg': user.user_id === 1862750540 }]"
                 :style="{
                   left: `${index * 20}px`,
                   zIndex: 100 - index,
@@ -1041,11 +1041,47 @@ export default {
   position: absolute;
   border: 2px solid #1e1e1e;
   transition: all 0.2s ease;
-  
+
   &:hover {
     z-index: 1;
     transform: scale(1.1);
   }
+}
+
+.heart-bg {
+  overflow: visible !important;
+  border-color: #ff4d6a;
+
+  &::before {
+    content: '⭐️';
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    font-size: 14px;
+    z-index: 10;
+    animation: heart-pulse 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px rgba(255, 77, 106, 0.6));
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 77, 106, 0.3) 0%, transparent 70%);
+    z-index: -1;
+    animation: heart-glow 2s ease-in-out infinite;
+  }
+}
+
+@keyframes heart-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+@keyframes heart-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .q-menu {
