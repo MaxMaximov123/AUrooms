@@ -184,14 +184,14 @@
                 v-for="(user, index) in roomUsers.slice(0, 3)"
                 :key="user.user_id"
                 size="32px"
-                :class="['overlapping-user', { 'heart-bg': user.user_id === 1387680086 }]"
+                :class="['overlapping-user', { 'heart-bg': user.user_id == '1387680086' }]"
                 :style="{
                   left: `${index * 20}px`,
                   zIndex: 100 - index,
                   position: 'absolute'
                 }"
               >
-              {{ user.user_id }}
+              ||{{ user.user_id }}||
                 <img :src="user.photo_url || 'https://cdn.quasar.dev/img/avatar.png'" />
               </q-avatar>
 
