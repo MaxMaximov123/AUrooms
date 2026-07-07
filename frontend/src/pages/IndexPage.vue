@@ -28,7 +28,7 @@
               v-for="(user, index) in roomUsers.slice(0, 3)"
               :key="user.user_id"
               size="32px"
-              :class="['overlapping-user', { 'heart-bg': user.user_id === 1862750540 }]"
+              :class="['overlapping-user', { 'heart-bg': user.user_id == '1862750540' }]"
               :style="{
                 left: `${index * 20}px`,
                 zIndex: 100 - index,
