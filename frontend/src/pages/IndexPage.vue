@@ -191,7 +191,6 @@
                   position: 'absolute'
                 }"
               >
-              ||{{ user.user_id }}||
                 <img :src="user.photo_url || 'https://cdn.quasar.dev/img/avatar.png'" />
               </q-avatar>
 
