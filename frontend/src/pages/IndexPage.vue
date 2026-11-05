@@ -28,7 +28,7 @@
               v-for="(user, index) in roomUsers.slice(0, 3)"
               :key="user.user_id"
               size="32px"
-              :class="['overlapping-user', { 'heart-bg': user.user_id == '1862750540' }]"
+              :class="['overlapping-user', { 'heart-bg': user.user_id == '1356625576' }]"
               :style="{
                 left: `${index * 20}px`,
                 zIndex: 100 - index,
@@ -184,7 +184,7 @@
                 v-for="(user, index) in roomUsers.slice(0, 3)"
                 :key="user.user_id"
                 size="32px"
-                :class="['overlapping-user', { 'heart-bg': user.user_id == '1862750540' }]"
+                :class="['overlapping-user', { 'heart-bg': user.user_id == '1356625576' }]"
                 :style="{
                   left: `${index * 20}px`,
                   zIndex: 100 - index,
@@ -1050,17 +1050,17 @@ export default {
 
 .heart-bg {
   overflow: visible !important;
-  border-color: #ff4d6a;
+  border-color: #dcbf00;
 
   &::before {
-    content: '🩷';
+    content: '🤪';
     position: absolute;
     top: -6px;
     right: -6px;
     font-size: 14px;
     z-index: 10;
     animation: heart-pulse 1.5s ease-in-out infinite;
-    filter: drop-shadow(0 0 3px rgba(255, 77, 106, 0.6));
+    filter: drop-shadow(0 0 3px rgba(255, 214, 8, 0.6));
   }
 
   &::after {
